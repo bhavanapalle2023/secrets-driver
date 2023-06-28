@@ -16,6 +16,7 @@ to access secrets stored in Secret Manager as files mounted in Kubernetes pods.
 
 ```shell
 $ export PROJECT_ID=<your gcp project>
+$ gcloud config set project $PROJECT_ID
 $ helm install <chart name> oci://<repository name>
 ```
 
