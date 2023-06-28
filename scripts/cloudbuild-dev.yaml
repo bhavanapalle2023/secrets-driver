@@ -19,12 +19,22 @@ timeout: 3600s  #increasing timeout else build crashes
 options:
   machineType: N1_HIGHCPU_8
 steps:
-- name: 'alpine/helm'
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '--tag=asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm:${_HELM_VERSION}', '--tag=asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm:latest', '--build-arg', 'HELM_VERSION=v${_HELM_VERSION}', './helm']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '--all-tags', 'asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm']
+- name: 'asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm'
   args: ['dependency', 'update', './charts/secrets-store-csi-driver-provider-gcp']
-- name: 'alpine/helm'
+  env:
+    - SKIP_CLUSTER_CONFIG=true
+- name: 'asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm'
   args: ['package', './charts/secrets-store-csi-driver-provider-gcp']
-- name: 'alpine/helm'
+  env:
+    - SKIP_CLUSTER_CONFIG=true
+- name: 'asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo/helm'
   args: ['push', 'secrets-store-csi-driver-provider-gcp-0.1.0.tgz', 'oci://asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo' ]
+  env:
+    - SKIP_CLUSTER_CONFIG=true
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'create', '--use']
 - name: 'gcr.io/cloud-builders/docker'
@@ -36,3 +46,5 @@ steps:
          'gcr.io/$PROJECT_ID/secrets-store-csi-driver-provider-gcp:$TAG_NAME',
          '--push',
          '.']
+substitutions:
+  _HELM_VERSION: 3.12.0
