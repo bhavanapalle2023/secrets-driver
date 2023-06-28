@@ -115,9 +115,6 @@ func Parse(in *MountParams) (*MountConfig, error) {
 		return nil, fmt.Errorf("failed to unmarshal attributes: %v", err)
 	}
 
-	fmt.Printf("****************************************************\nCONFIG FILE LINE 118\n Attrib is:\n%v\n*****************************************************\n\n\n", attrib)
-	fmt.Printf("****************************************************\nCONFIG FILE LINE 119\n ServiceAccountTokensValue is:\n%v\n*****************************************************\n", attrib[attributeServiceAccountTokens])
-
 	out.PodInfo = &PodInfo{
 		Namespace:            attrib[attributePodNamespace],
 		Name:                 attrib[attributePodName],

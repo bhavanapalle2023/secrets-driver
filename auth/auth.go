@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package auth includes obtains auth tokens for workload identity.
-package auth //	For more details see: https://pkg.go.dev/github.com/GoogleCloudPlatform/secrets-store-csi-driver-provider-gcp/auth
+package auth
 
 import (
 	"bytes"
@@ -28,18 +28,14 @@ import (
 	"strings"
 	"time"
 
-	/*
-		Package metadata provides access to Google Compute Engine (GCE) metadata and API service accounts.
-		For more details see: https://pkg.go.dev/cloud.google.com/go/compute/metadata
-	*/
 	"cloud.google.com/go/compute/metadata"
 	credentials "cloud.google.com/go/iam/credentials/apiv1"
-	"cloud.google.com/go/iam/credentials/apiv1/credentialspb" //	For more details see: https://pkg.go.dev/cloud.google.com/go/iam/credentials/apiv1/credentialspb#section-documentation
+	"cloud.google.com/go/iam/credentials/apiv1/credentialspb"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/GoogleCloudPlatform/secrets-store-csi-driver-provider-gcp/config"
 	"github.com/googleapis/gax-go/v2"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google" //	For more details see:  https://pkg.go.dev/golang.org/x/oauth2/google
+	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/oauth"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -62,20 +58,10 @@ const (
 	externalAccountKey = "external_account"
 )
 
-/*
-	Structures in Golang can be written to files like JSON for storing data on a hard drive or for sending over the network.
-	During the definition of structures, additional raw string values know as the field tags may be added to the field declaration which is used as the field name in JSON files. If no additional string value i.e field tag is specified, Go uses the default field name which is used to declare the field in the structure
-*/
-
 // credentialsFile is the unmarshalled representation of a credentials file.
 type credentialsFile struct {
 	Type string `json:"type"`
 	// External Account fields
-	/*
-		Audiences are the intendend audiences of the token. A recipient of a
-		token must identify themself with an identifier in the list of
-		audiences of the token, and otherwise should reject the token.
-	*/
 	Audience string `json:"audience"`
 }
 
@@ -99,7 +85,7 @@ func (c *Client) TokenSource(ctx context.Context, cfg *config.MountConfig) (oaut
 		if err != nil {
 			return nil, fmt.Errorf("unable to obtain workload identity auth: %v", err)
 		}
-		return oauth2.StaticTokenSource(token), nil //	StaticTokenSource returns a TokenSource that always returns the same token. Because the provided token t is never refreshed, StaticTokenSource is only useful for tokens that never expire.
+		return oauth2.StaticTokenSource(token), nil
 	}
 
 	return nil, errors.New("mount configuration has no auth method configured")
@@ -122,6 +108,10 @@ func (c *Client) TokenSource(ctx context.Context, cfg *config.MountConfig) (oaut
 // daemonset, including serviceaccounts/token create and serviceaccounts get.
 // These permissions could break node isolation and a long term solution is
 // tracked by Issue #13.
+//
+// Token sent by driver is extracted and used. However, if tokenRequests is not set
+// in driver spec, the provider does not receive any tokens drom driver and generates
+// its own token
 func (c *Client) Token(ctx context.Context, cfg *config.MountConfig) (*oauth2.Token, error) {
 
 	idPool, idProvider, err := c.gkeWorkloadIdentity(ctx, cfg)
@@ -156,22 +146,18 @@ func (c *Client) Token(ctx context.Context, cfg *config.MountConfig) (*oauth2.To
 		}
 		SATokenVal = SAToken.Token
 	} else {
-		SAToken, err := c.GeneratePodSAToken(ctx, cfg, idPool)
+		SAToken, err := c.GeneratePodSAToken(ctx, cfg, idPool) // if no token received, provider generates its own token
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch pod token: %w", err)
 		}
 		SATokenVal = SAToken.Token
 	}
 
-	fmt.Printf("****************************************************\nAUTH FILE LINE 166\n SATokenVal is:\n%v\n*****************************************************\n\n\n", SATokenVal)
-
 	// Trade the kubernetes token for an identitybindingtoken token.
 	idBindToken, err := tradeIDBindToken(ctx, c.HTTPClient, SATokenVal, idPool, idProvider)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch identitybindingtoken: %w", err)
 	}
-
-	fmt.Printf("****************************************************\nAUTH FILE LINE 174\n IDBindToken is:\n%v\n*****************************************************\n\n\n", idBindToken)
 
 	// If no `iam.gke.io/gcp-service-account` annotation is present the
 	// identitybindingtoken will be used directly, allowing bindings on secrets
@@ -194,7 +180,7 @@ func (c *Client) ExtractSAToken(cfg *config.MountConfig, idPool string) (*authen
 	AudienceTokens := map[string]authenticationv1.TokenRequestStatus{}
 	json.Unmarshal([]byte(cfg.PodInfo.ServiceAccountTokens), &AudienceTokens)
 	for k, v := range AudienceTokens {
-		if k == idPool {
+		if k == idPool { // Only returns the token if the audience is the workload identity. Other tokens cannot be used.
 			return &v, nil
 		}
 	}
@@ -268,7 +254,7 @@ func (c *Client) fleetWorkloadIdentity(ctx context.Context, cfg *config.MountCon
 		return "", "", fmt.Errorf("google: unexpected credentials type: %v, expected: %v", f.Type, externalAccountKey)
 	}
 
-	split := strings.SplitN(f.Audience, ":", 3) // Audience is the full URL of target service. Its value has the format "identitynamespace:idPool:idProvider"
+	split := strings.SplitN(f.Audience, ":", 3)
 	if split == nil || len(split) < 3 {
 		return "", "", fmt.Errorf("google: unexpected audience value: %v", f.Audience)
 	}
@@ -301,8 +287,6 @@ func tradeIDBindToken(ctx context.Context, client *http.Client, k8sToken, idPool
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("****************************************************\nAUTH FILE LINE 303\n NewRequestWithContext resp is:\n%v\n*****************************************************\n\n\n", resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("could not get idbindtoken token, status: %v", resp.StatusCode)

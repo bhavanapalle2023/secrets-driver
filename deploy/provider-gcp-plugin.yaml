@@ -36,12 +36,12 @@ kind: ClusterRole
 metadata:
   name: secrets-store-csi-driver-provider-gcp-role
 rules:
-  # - apiGroups:
-  #     - ""
-  #   resources:
-  #     - serviceaccounts/token
-  #   verbs:
-  #     - create
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts/token
+    verbs:
+      - create
   - apiGroups:
       - ""
     resources:

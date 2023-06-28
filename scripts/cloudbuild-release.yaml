@@ -18,7 +18,7 @@
 #
 # Requires permission for Cloud Build and the secretmanager-csi Artifact
 # Registry repos.
-timeout: 3600s  #increasing timeout else build crashes
+timeout: 2400s
 options:
   machineType: N1_HIGHCPU_8
 steps:

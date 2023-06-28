@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // zone to set up test cluster in
@@ -64,7 +64,7 @@ func execCmd(command *exec.Cmd) error {
 // Replaces variables in an input template file and writes the result to an
 // output file.
 func replaceTemplate(templateFile string, destFile string) error {
-	pwd, err := os.Getwd() //	Fetching current working directory
+	pwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
@@ -197,12 +197,11 @@ func teardownTestSuite() {
 
 // Entry point for go test.
 func TestMain(m *testing.M) {
-	// os.Exit(runTest(m))
 	withoutTokenStatus := runTest(m)
 	withTokenStatus := executeTest(m)
 	fmt.Printf("Exit Code when token is not passed from driver to provder is: %v", withoutTokenStatus)
 	fmt.Printf("Exit Code when token is passed from driver to provder is: %v", withTokenStatus)
-	os.Exit(withoutTokenStatus | withTokenStatus)
+	os.Exit(withoutTokenStatus & withTokenStatus)
 }
 
 func executeTest(m *testing.M) (code int) {
@@ -272,6 +271,7 @@ func updateTestSuiteSetup() {
 		panic("Unable to create YAML file")
 	}
 
+	// set tokenRequests in driver spec and reinstall driver to perform E2E testing when token is recieved by provider from driver
 	check(execCmd(exec.Command("kubectl", "apply", "--kubeconfig", f.kubeconfigFile,
 		"-f", fmt.Sprintf("https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/%s/deploy/rbac-secretproviderclass.yaml", f.secretStoreVersion),
 		"-f", fmt.Sprintf("https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/%s/deploy/rbac-secretprovidersyncing.yaml", f.secretStoreVersion),
