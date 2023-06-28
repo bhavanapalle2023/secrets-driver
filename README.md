@@ -21,8 +21,8 @@ $ helm install <chart name> oci://<repository name>
 
 * The provider has a dependency on the driver and hence will automatically install the [CSI Secret Store Driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver). 
 
-During installation, it will set the tokenRequests audience value to PROJECT_ID.svc.id.goog i.e. [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_existing_cluster)
-which will enable the provider to utlize the same k8s token as the driver.
+During installation, it will set the [tokenRequests](https://kubernetes-csi.github.io/docs/token-requests.html) Audience field value to PROJECT_ID.svc.id.goog i.e. [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_existing_cluster)
+in the [CSI Secret Store Driver Spec](https://kubernetes-csi.github.io/docs/csi-driver-object.html) which will enable the provider to utlize the same k8s token as the driver.
 
 NOTE: The driver's rotation and secret syncing functionality is still in Alpha and requires [additional installation
 steps](https://secrets-store-csi-driver.sigs.k8s.io/getting-started/installation.html#optional-values).
