@@ -24,7 +24,7 @@ steps:
 - name: 'alpine/helm'
   args: ['package', './charts/secrets-store-csi-driver-provider-gcp']
 - name: 'alpine/helm'
-  args: ['push', 'secrets-store-csi-driver-provider-gcp-0.1.0.tgz', 'oci://asia-east1-docker.pkg.dev/bpalle-intern-2023/driver-repo' ]
+  args: ['push', 'secrets-store-csi-driver-provider-gcp-0.1.0.tgz', 'oci://asia-east1-docker.pkg.dev/$PROJECT_ID/driver-repo' ]
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'create', '--use']
 - name: 'gcr.io/cloud-builders/docker'

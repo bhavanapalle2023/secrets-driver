@@ -150,7 +150,7 @@ func (c *Client) Token(ctx context.Context, cfg *config.MountConfig) (*oauth2.To
 	// Obtain a serviceaccount token for the pod
 	var SATokenVal string
 	if cfg.PodInfo.ServiceAccountTokens != "" {
-		SAToken, err := c.ExtractSAToken(cfg) // calling function to extract token received from driver
+		SAToken, err := c.ExtractSAToken(cfg, idPool) // calling function to extract token received from driver
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch SA token from driver: %w", err)
 		}
@@ -190,11 +190,13 @@ func (c *Client) Token(ctx context.Context, cfg *config.MountConfig) (*oauth2.To
 	return &oauth2.Token{AccessToken: gcpSAResp.GetAccessToken()}, nil
 }
 
-func (c *Client) ExtractSAToken(cfg *config.MountConfig) (*authenticationv1.TokenRequestStatus, error) {
+func (c *Client) ExtractSAToken(cfg *config.MountConfig, idPool string) (*authenticationv1.TokenRequestStatus, error) {
 	AudienceTokens := map[string]authenticationv1.TokenRequestStatus{}
 	json.Unmarshal([]byte(cfg.PodInfo.ServiceAccountTokens), &AudienceTokens)
-	for _, v := range AudienceTokens {
-		return &v, nil
+	for k, v := range AudienceTokens {
+		if k == idPool {
+			return &v, nil
+		}
 	}
 	return nil, fmt.Errorf("Unable to obtain token from driver")
 }
