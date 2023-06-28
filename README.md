@@ -16,7 +16,7 @@ to access secrets stored in Secret Manager as files mounted in Kubernetes pods.
 
 ```shell
 $ export PROJECT_ID=<your gcp project>
-$ helm install <chart_name> oci://<repository_name>
+$ helm install <chart name> oci://<repository name>
 ```
 
 * The provider has a dependency on the driver and hence will automatically install the [CSI Secret Store Driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver). 
